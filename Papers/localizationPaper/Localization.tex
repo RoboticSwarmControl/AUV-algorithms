@@ -1,0 +1,304 @@
+\pdfobjcompresslevel=0  % I had adobe error 131, and this removed it: http://tex.stackexchange.com/questions/64448/how-to-overcome-acrobat-reader-error-131-with-a-pdflatex-doc
+
+\documentclass[letterpaper, 10 pt, conference]{ieeeconf}
+\IEEEoverridecommandlockouts
+\usepackage{calc}
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks =true,
+  urlcolor = black,
+  linkcolor = black
+}
+\usepackage{graphicx}
+\usepackage[cmex10]{amsmath}
+\usepackage{amssymb}
+\usepackage{rotating}
+\usepackage{booktabs}
+
+\usepackage{rotating}
+\usepackage{nicefrac}
+\usepackage{cite}
+\usepackage[caption=false,font=footnotesize]{subfig}
+\usepackage[usenames, dvipsnames]{color}
+\usepackage{colortbl}
+\usepackage{overpic}
+\graphicspath{{./pictures/}}
+\usepackage{breqn} %for breaking equations automatically
+\usepackage[ruled]{algorithm}
+\usepackage{algpseudocode}
+\usepackage{multirow}
+
+\usepackage{bm}   % boldface math type
+\usepackage{soul}  % for highlighting
+\newcommand{\todo}[1]{\vspace{5 mm}\par \noindent \framebox{\begin{minipage}[c]{0.98 \columnwidth} \ttfamily\flushleft \textcolor{red}{#1}\end{minipage}}\vspace{5 mm}\par}
+% uncomment this to hide all red todos
+%\renewcommand{\todo}{}
+
+%% ABBREVIATIONS
+\newcommand{\qstart}{q_{\text{start}}}
+\newcommand{\qgoal}{q_{\text{goal}}}
+\newcommand{\pstart}{p_{\text{start}}}
+\newcommand{\pgoal}{p_{\text{goal}}}
+\newcommand{\xstart}{x_{\text{start}}}
+\newcommand{\xgoal}{x_{\text{goal}}}
+\newcommand{\ystart}{y_{\text{start}}}
+\newcommand{\ygoal}{y_{\text{goal}}}
+\newcommand{\gammastart}{\gamma_{\text{start}}}
+\newcommand{\gammagoal}{\gamma_{\text{goal}}}
+\providecommand{\proc}[1]{\textsc{#1}}
+
+
+\newcommand{\ARLfull}{Aero\-space Ro\-bot\-ics La\-bora\-tory }
+\newcommand{\ARL}{\textsc{arl}}
+\newcommand{\JPL}{\textsc{jpl}}
+\newcommand{\PRM}{\textsc{prm}}
+\newcommand{\CM}{\textsc{cm}}
+\newcommand{\SVM}{\textsc{svm}}
+\newcommand{\NN}{\textsc{nn}}
+\newcommand{\prm}{\textsc{prm}}
+\newcommand{\lemur}{\textsc{lemur}}
+\newcommand{\Lemur}{\textsc{Lemur}}
+\newcommand{\LP}{\textsc{lp}} 
+\newcommand{\SOCP}{\textsc{socp}}
+\newcommand{\SDP}{\textsc{sdp}}
+\newcommand{\NP}{\textsc{np}}
+\newcommand{\SAT}{\textsc{sat}}
+\newcommand{\LMI}{\textsc{lmi}}
+\newcommand{\hrp}{\textsc{hrp\nobreakdash-2}}
+\newcommand{\DOF}{\textsc{dof}}
+\newcommand{\UIUC}{\textsc{uiuc}}
+%% MACROS
+
+
+\providecommand{\abs}[1]{\left\lvert#1\right\rvert}
+\providecommand{\norm}[1]{\left\lVert#1\right\rVert}
+\providecommand{\normn}[2]{\left\lVert#1\right\rVert_#2}
+\providecommand{\dualnorm}[1]{\norm{#1}_\ast}
+\providecommand{\dualnormn}[2]{\norm{#1}_{#2\ast}}
+\providecommand{\set}[1]{\lbrace\,#1\,\rbrace}
+\providecommand{\cset}[2]{\lbrace\,{#1}\nobreak\mid\nobreak{#2}\,\rbrace}
+\providecommand{\lscal}{<}
+\providecommand{\gscal}{>}
+\providecommand{\lvect}{\prec}
+\providecommand{\gvect}{\succ}
+\providecommand{\leqscal}{\leq}
+\providecommand{\geqscal}{\geq}
+\providecommand{\leqvect}{\preceq}
+\providecommand{\geqvect}{\succeq}
+\providecommand{\onevect}{\mathbf{1}}
+\providecommand{\zerovect}{\mathbf{0}}
+\providecommand{\field}[1]{\mathbb{#1}}
+\providecommand{\C}{\field{C}}
+\providecommand{\R}{\field{R}}
+\newcommand{\Cspace}{\mathcal{Q}}
+\newcommand{\Uspace}{\mathcal{U}}
+\providecommand{\Fspace}{\Cspace_\text{free}}
+\providecommand{\Hcal}{$\mathcal{H}$}
+\providecommand{\Vcal}{$\mathcal{V}$}
+\DeclareMathOperator{\conv}{conv}
+\DeclareMathOperator{\cone}{cone}
+\DeclareMathOperator{\homog}{homog}
+\DeclareMathOperator{\domain}{dom}
+\DeclareMathOperator{\range}{range}
+\DeclareMathOperator{\sign}{sgn}
+\DeclareMathOperator{\sgn}{signum}
+\providecommand{\polar}{\triangle}
+\providecommand{\ainner}{\underline{a}}
+\providecommand{\aouter}{\overline{a}}
+\providecommand{\binner}{\underline{b}}
+\providecommand{\bouter}{\overline{b}}
+\newcommand{\D}{\nobreakdash-\textsc{d}}
+%\newcommand{\Fspace}{\mathcal{F}}
+\providecommand{\Fspace}{\Cspace_\text{free}}
+\providecommand{\free}{\text{\{}\mathsf{free}\text{\}}}
+\providecommand{\iff}{\Leftrightarrow}
+\providecommand{\subinner}[1]{#1_{\text{inner}}}
+\providecommand{\subouter}[1]{#1_{\text{outer}}}
+\providecommand{\Ppoly}{\mathcal{X}}
+\providecommand{\Pproj}{\mathcal{Y}}
+\providecommand{\Pinner}{\subinner{\Pproj}}
+\providecommand{\Pouter}{\subouter{\Pproj}}
+\DeclareMathOperator{\argmax}{arg\,max}
+\providecommand{\Aineq}{B}
+\providecommand{\Aeq}{A}
+\providecommand{\bineq}{u}
+\providecommand{\beq}{t}
+\DeclareMathOperator{\area}{area}
+\newcommand{\contact}[1]{\Cspace_{#1}}
+\newcommand{\feasible}[1]{\Fspace_{#1}}
+\newcommand{\dd}{\; \mathrm{d}}
+\newcommand{\figwid}{0.22\columnwidth}
+
+\DeclareMathOperator{\atan2}{atan2}
+
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\begin{document}
+
+%%%%%%%%%%%%%% For debugging purposes, I like to display the TOC
+%\tableofcontents
+%\setcounter{tocdepth}{3}
+%\newpage
+%\mbox{}
+%\newpage
+%\mbox{}
+%\newpage
+%%%%%% END TOC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{\LARGE \bf 
+Optimizing an AUV's path to Localize Underwater Sensors
+}
+\author{
+Haoran Zhao
+Aaron T. Becker
+\thanks{{
+      \protect\url{s.fekete@tu-bs.de},
+H. Zhao and A.~Becker are with the  Dept.~of Electrical and Computer Engineering,  University of Houston, Houston, TX 70004, USA {\tt\small atbecker@uh.edu}.
+}
+} %\end thanks
+} % end author block
+\maketitle
+
+
+
+\begin{abstract} 
+We present fundamental progress on localizing underwater sensors with a patrolling AUV
+\end{abstract}
+
+
+%\textcolor{red}{In general pay more attention to structuring each paragraph so that you guide your reader by telling them first what you will accomplish in that paragraph and then making sure you support all your assertions.}
+
+%###############################################################
+\section{Introduction}
+%###############################################################
+
+One of the exciting new directions of robotics is the design and development
+of micro- and nanorobot systems, with the goal of letting a massive swarm of robots
+perform complex operations in a complicated environment. Due to scaling 
+issues, individual control of the involved robots becomes physically impossible:
+while energy storage capacity drops with the third power of robot size,
+medium resistance decreases much slower. As a consequence,
+current micro- and nanorobot systems with many robots are steered and
+directed by an external force that acts as a common control signal~\cite{Donald2013,Chiang2011,Hsi-Wen2012,Diller2013,Jing2013,Ou2013,Lanauze2013}.
+These common control signals include global magnetic or electric fields,
+chemical gradients, and turning a light source on and off.  
+
+Clearly, having only one global signal that uniformly affects all robots at once
+poses a strong restriction on the ability of the swarm to perform complex operations.
+The only hope for breaking symmetry is to use interactions between the robot swarm
+and obstacles in the environment. The key challenge is to establish
+if interactions with obstacles are sufficient to perform complex operations, ideally by analyzing the complexity of possible logical operations.
+ In previous work \cite{Becker2013f,Becker2014,Becker2014a},
+we were able to demonstrate how a subset of logical functions can be implemented;
+however, devising a fan-out gate (and thus the ability to replicate and copy information)
+appeared to be prohibitively challenging. In this paper, we resolve this crucial question by
+showing that only using unit-sized robots is insufficient for achieving computational
+universality. Remarkably, adding a limited number of domino-shaped objects {\em is sufficient}
+to let a common control signal, mobile particles, and unit-sized obstacles
+simulate a computer. While this does not imply that large-scale computational 
+tasks should be run on these particle computers instead of current electronic
+devices, it establishes that future nano-scale systems are able to perform
+arbitrarily complex operations {\em as part of the physical system}, instead
+of having to go through external computational devices.
+% We do not present particle logic as an alternative
+%to electronic computing.
+%Frankly, this form of computation is impractical. It is slow, requires large
+%amounts of space, and is vulnerable to manufacturing defects. Rather, we
+%quantify the computing power of mobile robotics at the most simple level in
+%order to gain insight for massively-parallel, automated assembly at the micro
+%and nano length-scales.
+
+   \begin{figure}
+   \centering
+\begin{overpic}[width =\columnwidth]{TetrisOne.jpg}%\put(30,-7){ $m=1$, partition 1}
+\end{overpic}
+\caption{\label{fig:prototype}
+Gravity-fed hardware implementation of  particle computation.  The reconfigurable prototype is setup as a {\sc fan-out} gate using a 2$\times$1 robot (white). This paper proves that such a gate is impossible using only 1$\times$1 robots.  }
+\vspace{-1em}
+\end{figure}
+
+ \subsection{Model}
+  
+This paper builds on the techniques for controlling many simple robots with uniform control inputs presented in \cite{Becker2013f,Becker2014,Becker2014a}, using the following rules:
+\begin{enumerate}
+\item A planar  grid \emph{workspace} $W$ is filled with a number of unit-square robots (each occupying one cell of the grid)  and some fixed unit-square blocks.  Each unit square in the workspace is either  \emph{free}, which a robot may occupy or \emph{obstacle} which a robot may not occupy.  Each square in the grid can be referenced by its Cartesian coordinates $\bm{x}=(x,y)$.
+\item All robots are commanded in unison: the valid commands are  ``Go Up" ($u$), ``Go Right" ($r$), ``Go Down" ($d$), or ``Go Left" ($l$).  
+\item Robots all move in the commanded direction until they 
+	\begin{enumerate}
+		\item hit an obstacle 
+		\item hit a stationary robot. 
+		\item share an edge with a compatible robot
+	\end{enumerate}
+	If a robot shares an edge with a compatible robot the two robots bond and from then on move as a unit.
+A \emph{command sequence} $\bm{m}$ consists of an ordered sequence of moves $m_k$, where each $m_k\in\{u,d,r,l\}$  A representative command sequence is $\langle u,r,d,l,d,r,u,\ldots\rangle$. We assume the area of $W$ is finite and issue each command long enough for the robots to reach their maximum extent.
+\end{enumerate}
+
+
+
+%###############################################################
+\section{Related Work}\label{sec:RelatedWork}
+%###############################################################
+Our efforts have similarities with \emph{mechanical computers},  computers
+constructed from mechanical, not electrical components. For a fascinating
+nontechnical review, see \cite{McCourtney1999}.  These devices have a rich
+history, from the \emph{Pascaline}, an adding machine invented in 1642 by a
+nineteen-year old Blaise Pascal; Herman Hollerith's punch-card tabulator in
+1890; to the mechanical devices of IBM culminating in the 1940s.  These devices
+used precision gears, pulleys, or electric motors to carry out calculations.
+Though our {\sc Grid-World} implementations are rather basic, 
+we require none of these precision elements---merely unit-size obstacles,  and
+sliding particles sized 2$\times$1 and 1$\times$1 for achieving computational universality.
+%Can we call these robots? Indeed, the ENIAC itself was labelled a robot by the
+%associated press when it was announced in the 1940s. 
+
+\subsection{Collision-Based Computing}
+Collision-based computing has been defined as \emph{``computation in a structureless medium populated with mobile objects''}.  For a survey of this area, see the excellent collection~\cite{Adamatzky2012}. Early examples include the billiard-ball computer proposed by Fredkin and Toffoli using only spherical balls and a frictionless environment composed of elastic collisions with other balls and with angled walls \cite{Fredkin1982ConservativeLogic}. Another popular example is Conway's {\em Game of Life}, a cellular automaton governed by four simple rules~\cite{berlekamp2001winning}. Cells live or die based on the number of neighbors. These rules have been examined in depth and used to design a Turing-complete computer \cite{Adamatzky2002}.  Game of life scenarios and billiard-ball computers are fascinating, but lack a physical implementation.  In this paper we present a collision-based system for computation and provide a physical implementation.
+%\textcolor{red}{Todo: this paragraph is incomplete}
+
+
+\subsection{Sliding-Block Puzzles}
+Sliding-block puzzles use rectangular tiles that are constrained to move in a 2D workspace. The objective is to move one or more tiles to desired locations. They have a long history.
+Hearn \cite{hearn2005complexity} and Demaine \cite{Demaine2009} showed tiles can be arranged to create logic gates, and used this technique to prove {\sc pspace} complexity for a variety of sliding-block puzzles.  Hearn expressed the idea of building computers from the sliding blocks---many of the logic gates could be connected together, and the user could propagate a signal from one gate to the next by sliding intermediate tiles.  This requires the user to know precisely which sequence of gates to enable/disable.  In contrast to such a hands-on approach, with our architecture we can build circuits, store parameters in memory, and then actuate the entire system in parallel using a global control signal.
+
+\subsection{Other Related Work on Programmable Matter}
+Clearly there is a wide range of interesting scenarios for developing approaches to programmable matter.
+One such model is the \emph{abstract Tile-Assembly Model} (aTAM) by Winfree~\cite{Winf98,WLWS98,LaWiRe99}, which has 
+sparked a wide range of theoretical and practical research. In this model, unit-sized pixels (``tiles'')
+interact and bond with the help of differently labeled edges, eventually composing complex assemblies.
+Even though the operations and final objectives in this model are quite different from our particle computation with global
+inputs (e.g., key features of the aTAM are that tiles can have a wide range of different edge types, and
+that they keep sticking together after bonding), there is
+a remarkable geometric parallelism to a key result of our present paper:
+While it is widely believed that at the most basic level of interaction (called {\em temperature 1}),
+computational universality {\em cannot be achieved}~\cite{LSAT1,ManuchTemp1,IUNeedsCoop} in the aTAM with only unit-sized pixels, 
+very recent work~\cite{fhp+-ucapt-15} shows that computational universality {\em can be achieved} as soon as even slightly bigger tiles are used. 
+This resembles the results of our paper, which shows that unit-size particles are insufficient for universal computation, while employing bigger particles suffices
+
+
+
+
+%###############################################################
+\section{Conclusion}\label{sec:Conclusion}
+%###############################################################
+In this paper we 
+
+This work, along with \cite{Becker2013f,Becker2014,Becker2014a}, introduces a
+new model for additive assembly.  Interesting applications will aim at 
+nanoscale and microfluidics work.
+
+    
+%\section{Acknowledgements}
+%This work was supported by the National Science Foundation under
+%\href{http://nsf.gov/awardsearch/showAward?AWD_ID=1208509}{NRI-1208509}.  
+   
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv,../../RoboticSwarmControlLab/bib/aaronrefs}%,../aaronrefs} %../../../../../../ensemble/bib/aaronrefs}
+
+
+\end{document}
+
+
