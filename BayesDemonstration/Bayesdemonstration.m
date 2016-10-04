@@ -1,29 +1,16 @@
-% 1.) add comments to each high-level step and each function
-% 2.) make this actually compute the Bayes rule and display
-% 3.) rename the variables so each one is descriptive
-
 %function BayesDemonstration()
 %BayesDemonstration is used to demonstrate Bayes' rule for an underwater
 %localization sestup
 %
 %The algorithm uses range-based localization
 %
-% Outline:
-%   1. set a fix sensor position
-%   2. set five different position of boat 40 away from sensor
-%   3. each position measure distance bwt sensor
-%   4. implement bayes rule
-%   5. draw 2D image
-%   6. draw histogram
 %
-% result:
-%
-% Subfunctions:
+% Subfunctions: updatprob, drawworld, redrawworld, drawcontour
 %
 % Author: Haoran Zhao, Master, Electrical Engineering
 % University of Houston
 % email address: zhaohaorandl@gmail.com
-% Last revision: 26-Sep-2016
+% Last revision: 4-Oct-2016
 
 %------------- BEGIN CODE --------------
 clear
@@ -33,57 +20,67 @@ format compact
 %%------------ main variables -----------
 sensor_position = [0,0];
 boat_position=zeros(1,2);
-xrange=-50:50;
+xrange=-50:50; %define an area
 yrange=-50:50;
 [X,Y]=ndgrid(xrange,yrange);
 xy=[X(:),Y(:)];
 r=numel(X);
-sd=10;   %standard deviation of range measurements
+sd=1;   %standard deviation of range measurements
 md=1;
 step = 5;
 range = 30;
 dist_cell=zeros(r,1);
 probs = zeros(r,1);
-belief_init = ones(101,101)./numel(ones(101,101));
-m=belief_init;
-pts_in = cell(step,1);
-belief = cell(step,1);
+belief_init = ones(101,101)./numel(ones(101,101)); % normalize initial probability
+belief=belief_init;
+pts_in = cell(1,step);
+dn_belief = cell(1,step);
 %%----------- main code ---------------
 
 
 for i=1:step
-    %%% Update probability distribution
+    %%% random generate boat position
     theta = rand(1,1)*2*pi;
     sbdist = (range+md)* rand(1,1);
     boat_position = [sbdist*cos(theta),sbdist*sin(theta)];
     dist_error = sbdist+randn(1,1);
-    % Apply the numerator of Bayes rule
+    % Update probability distribution 
     for i1=1:r
-        dist_cell(i1,1)=dist(xy(i1,:),boat_position);
+        dist_cell(i1,1)=dist(xy(i1,:),boat_position); % measure distance bwt boat and sensor
         probs(i1)=updtprob(dist_cell(i1),dist_error,sd);
     end
-    
+    % Map donut sample point probability to area
     for i2=1:r
-        belief{i}(xy(i2,1)+51,xy(i2,2)+51)=probs(i2);
+        dn_belief{i}(xy(i2,2)+51,xy(i2,1)+51)=probs(i2);
     end
-    % Renormalize (Apply the denominator of Bayes rule)  At the end,
-    % belief{i} must be a valid probability distribution.
-    normalizerb=1/sum(belief{i}(:));
-    n=belief{i}.*normalizerb;
+    % Normalize donut probability 
+    normalizerb=1/sum(dn_belief{i}(:));
+    Pdonut=dn_belief{i}.*normalizerb;
+    
+    % Apply the numerator of Bayes rule
+    %p(a_t|b_t)=n*p(b_t|a_t-1)*p(a_t-1)
     for i4=1:i
-        m=m.*belief{i};
+        belief=belief.*dn_belief{i};
     end
-    %  m=m.*belief_init.^(i-1);
-    normalizer = 1/sum(m(:));
-    m=m.*normalizer;
-    b_var=var(m(:));
-    fidx=probs>10^-5;
-    idx=find(fidx);
-    [r1,~]=size(idx);
+    % Apply the denominator of Bayes rule
+    %%%  m=m.*belief_init.^(i-1);
+    normalizer = 1/sum(belief(:));
+    belief=belief.*normalizer;
+    
+    %%% find possible postion in measured distance
+    fidx1=probs>10^-5;
+    idx1=find(fidx1);
+    [r1,~]=size(idx1);
     for i3=1:r1
-        pts_in{i}(i3,:) = xy(idx(i3,1),:) ;
+        pts_in{i}(i3,:) = xy(idx1(i3,1),:) ;
     end
-    %%%Plotting code ----------- figure(1) ---------------
+    
+    %%% compute variance of estimate position
+    fidx2=belief>10^-5;
+    [idr,idc]=find(fidx2==1);
+    b_var=var(idr,idc);
+    %%% -----------Plotting code------------
+    
     figure(1)
     hPpts = plot(pts_in{i}(:,1),pts_in{i}(:,2),'r.');
     hold on
@@ -93,27 +90,32 @@ for i=1:step
     hBpts = plot(boat_position(1,1),boat_position(1,2),'k+');
     axis([-50 50 -50 50]);
     legend('estimate position','sensor position','boat position');
-    title(['Histogram after ',num2str(i),'  distance measurements'])
+    title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
     
     figure(2)
-    redrawWorld(m);
-    hold on
-    redrawWorld(n);
+    drawcontour(belief);
     title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
-    
+
     figure(3)
-    redrawWorlds(m);
+    redrawWorld(belief);
     hold on
-    redrawWorlds(n);
+    redrawWorld(Pdonut);
+    title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
+    
+    figure(4)
+    redrawWorlds(belief);
+    hold on
+    redrawWorlds(Pdonut);
     
     title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
+    
     
     
 end
-
-[r_est,c_est]=find(m==max(m(:)));
+%%% display final estimate result
+[r_est,c_est]=find(belief==max(belief(:)));
 r_est=r_est-51;
 c_est=c_est-51;
-display(['estimate of position (r,c)=(',num2str(r_est),num2str(c_est),', step ',num2str(i)])
+display(['Estimate of position: (x,y)= [',num2str(r_est),',',num2str(c_est),']',', step =',num2str(step)])
 
 %------------- END OF CODE --------------
