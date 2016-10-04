@@ -55,7 +55,7 @@ for i=1:step
     end
     % Normalize donut probability 
     normalizerb=1/sum(dn_belief{i}(:));
-    Pdonut=dn_belief{i}.*normalizerb;
+    Pdonut=dn_belief{i}.*normalizerb; % probability of each time estimated donut
     
     % Apply the numerator of Bayes rule
     %p(a_t|b_t)=n*p(b_t|a_t-1)*p(a_t-1)
