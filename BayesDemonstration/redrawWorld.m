@@ -11,4 +11,5 @@ function redrawWorld(belief)
             set(h(ks),'CData', zdata);
             set(h(ks),'FaceColor', 'interp');
         end
+        axis tight
     end

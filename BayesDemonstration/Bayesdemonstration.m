@@ -1,15 +1,20 @@
-%This code is use for demonstrating Bayes rule can implement to underwater
-%localization
+% 1.) add comments to each high-level step and each function
+% 2.) make this actually compute the Bayes rule and display
+% 3.) rename the variables so each one is descriptive
+
+%function BayesDemonstration()
+%BayesDemonstration is used to demonstrate Bayes' rule for an underwater
+%localization sestup
 %
-%The algorithm is based on range based schemes localization
+%The algorithm uses range-based localization
 %
 % Outline:
-%    set a fix sensor position
-%    set five different position of boat 40 away from sensor
-%    each position measure distance bwt sensor
-%    implement bayes rule
-%    draw 2D image
-%    draw histogram
+%   1. set a fix sensor position
+%   2. set five different position of boat 40 away from sensor
+%   3. each position measure distance bwt sensor
+%   4. implement bayes rule
+%   5. draw 2D image
+%   6. draw histogram
 %
 % result:
 %
@@ -32,9 +37,8 @@ xrange=-50:50;
 yrange=-50:50;
 [X,Y]=ndgrid(xrange,yrange);
 xy=[X(:),Y(:)];
-[r,~]=size(xy);
-r=round(r);
-sd=1;
+r=numel(X);
+sd=10;   %standard deviation of range measurements
 md=1;
 step = 5;
 range = 30;
@@ -42,12 +46,18 @@ dist_cell=zeros(r,1);
 probs = zeros(r,1);
 belief_init = ones(101,101)./numel(ones(101,101));
 m=belief_init;
+pts_in = cell(step,1);
+belief = cell(step,1);
 %%----------- main code ---------------
+
+
 for i=1:step
+    %%% Update probability distribution
     theta = rand(1,1)*2*pi;
     sbdist = (range+md)* rand(1,1);
     boat_position = [sbdist*cos(theta),sbdist*sin(theta)];
     dist_error = sbdist+randn(1,1);
+    % Apply the numerator of Bayes rule
     for i1=1:r
         dist_cell(i1,1)=dist(xy(i1,:),boat_position);
         probs(i1)=updtprob(dist_cell(i1),dist_error,sd);
@@ -56,12 +66,14 @@ for i=1:step
     for i2=1:r
         belief{i}(xy(i2,1)+51,xy(i2,2)+51)=probs(i2);
     end
+    % Renormalize (Apply the denominator of Bayes rule)  At the end,
+    % belief{i} must be a valid probability distribution.
     normalizerb=1/sum(belief{i}(:));
     n=belief{i}.*normalizerb;
     for i4=1:i
         m=m.*belief{i};
     end
-    %     m=m.*belief_init.^(i-1);
+    %  m=m.*belief_init.^(i-1);
     normalizer = 1/sum(m(:));
     m=m.*normalizer;
     b_var=var(m(:));
@@ -69,9 +81,9 @@ for i=1:step
     idx=find(fidx);
     [r1,~]=size(idx);
     for i3=1:r1
-        pts_in{i}(i3,:) =xy(idx(i3,1),:) ;
+        pts_in{i}(i3,:) = xy(idx(i3,1),:) ;
     end
-    %%----------- figure(1) ---------------
+    %%%Plotting code ----------- figure(1) ---------------
     figure(1)
     hPpts = plot(pts_in{i}(:,1),pts_in{i}(:,2),'r.');
     hold on
@@ -100,11 +112,8 @@ for i=1:step
 end
 
 [r_est,c_est]=find(m==max(m(:)));
-r_est=r_est-51
-c_est=c_est-51
-
-
-
-
+r_est=r_est-51;
+c_est=c_est-51;
+display(['estimate of position (r,c)=(',num2str(r_est),num2str(c_est),', step ',num2str(i)])
 
 %------------- END OF CODE --------------
