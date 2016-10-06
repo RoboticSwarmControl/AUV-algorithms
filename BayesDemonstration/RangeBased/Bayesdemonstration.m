@@ -35,6 +35,8 @@ belief_init = ones(101,101)./numel(ones(101,101)); % normalize initial probabili
 belief=belief_init;
 pts_in = cell(1,step);
 dn_belief = cell(1,step);
+b_position=zeros(101,101);
+
 %%----------- main code ---------------
 
 
@@ -56,7 +58,7 @@ for i=1:step
     % Normalize donut probability 
     normalizerb=1/sum(dn_belief{i}(:));
     Pdonut=dn_belief{i}.*normalizerb; % probability of each time estimated donut
-    
+    b_position(round(boat_position(1,2))+51,round(boat_position(1,1))+51)=max(Pdonut(:));
     % Apply the numerator of Bayes rule
     %p(a_t|b_t)=n*p(b_t|a_t-1)*p(a_t-1)
     for i4=1:i
@@ -100,17 +102,19 @@ for i=1:step
     redrawWorld(belief);
     hold on
     redrawWorld(Pdonut);
+    redrawWorld(b_position);
     title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
     
     figure(4)
     redrawWorlds(belief);
     hold on
     redrawWorlds(Pdonut);
+    redrawWorlds(b_position);
     
     title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
     
     
-    
+   pause(1); 
 end
 %%% display final estimate result
 [r_est,c_est]=find(belief==max(belief(:)));
