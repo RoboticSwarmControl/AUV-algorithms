@@ -19,14 +19,14 @@ format compact
 %------------- Main variable -----------
 s_number = 2; %sensor number
 b_number = 3; %boat number
-
+step = 50;
 %generate sensor position
 a=0;
 b=100;
-c=20;
+C=20;
 d=80;
-x1=c+(d-c)*rand(s_number,1);
-y1=c+(d-c)*rand(s_number,1);
+x1=C+(d-C)*rand(s_number,1);
+y1=C+(d-C)*rand(s_number,1);
 sensor_position=[x1(:),y1(:)];
 
 %generate map area
@@ -54,8 +54,13 @@ idx_in = zeros(b_number,s_number); % record if sensor in range with 0 or 1
 distance_bws=zeros(b_number,s_number);
 variance = zeros(1,s_number);
 est_postion = zeros(s_number,2);
+eta = NaN(s_number,step); % confidence level
+eta_b=NaN(b_number,s_number); %confidence level each boat and each sensor
+theta = NaN(b_number,s_number); %distance squar bwt boat and sensor position
+l = NaN(b_number,s_number); % distance squar bwt boat and estimated position
+
 %------------ Main Code ------------
-for t=1:1000
+for t=1:step
     %generate boat position
     x2=a+(b-a)*rand(b_number,1);
     y2=a+(b-a)*rand(b_number,1);
@@ -78,7 +83,7 @@ for t=1:1000
     end
     
     [r1,c1]=find(idx_in==1);
-    if isempty(r1)~=1
+    if isempty(r1)==0
         for i2=1:numel(r1)
             %find possible position in the range
             pts_in{r1(i2),c1(i2)}=overlapping(xy,boat_position(r1(i2),:),range);  
@@ -118,9 +123,52 @@ for t=1:1000
        est_position(ii,1)=mean(r4)-1;
        est_position(ii,2)=mean(c4)-1;
    end
-    
+%--------------- Confidence level ---------
+if isempty(r1)==0
+    theta=(distance_bws).^2;
+    for ii1=1:b_number
+        for ii2=1:s_number
+            l(ii1,ii2)=(dist(boat_position(ii1,:),est_position(ii2,:))).^2;
+        end
+    end
+    for ii1=1:s_number
+        eta_b=NaN(b_number,s_number);
+        for ii2=1:b_number
+            eta_b(ii2,ii1)=1-(abs(sum(theta(ii2,ii1)-l(ii2,ii1)))/sum(theta(ii2,ii1)));
+        end
+        eta(ii1,t)=sum(eta_b(:,ii1))/b_number;
+        if eta(ii1,t)<0
+            eta(ii1,t)=0;
+        end
+    end
+else
+    if t==1
+        eta(:,t)=0;
+    else
+        eta(:,t)=eta(:,t-1);
+    end
+end
+
 %---------------plot image ---------------
 figure(1)
+subplot(2,2,1)
+for i8=1:b_number
+    for i9=1:s_number
+        if isempty(find(pts_in{i8,i9})>0)==0
+            plot(pts_in{i8,i9}(:,1),pts_in{i8,i9}(:,2),'r.');
+        hold on
+        end
+    end
+end
+plot (boat_position(:,1),boat_position(:,2),'>','markerfacecolor','y','markersize',10); 
+plot (sensor_position(:,1),sensor_position(:,2),'b+');
+hold off
+axis equal
+axis([0 100 0 100])
+% legend('Boat position','sensor position','Estimated Area','Location','northeastoutside');
+title(['Estimated area after ',num2str(t),'th  Range detection'])
+
+subplot(2,2,2)
 plot (boat_position(:,1),boat_position(:,2),'>','markerfacecolor','y','markersize',10);
 hold on 
 plot (sensor_position(:,1),sensor_position(:,2),'b+');
@@ -137,23 +185,23 @@ end
 hold off
 axis equal
 axis([0 100 0 100])
-legend('Boat position','sensor position','Estimated Area');
-title({['Histogram after ',num2str(t),'  range detection'],['Histogram variance = ', num2str(variance)],})
+% legend('Boat position','sensor position','Estimated Area','Location','northeastoutside');
+title({['Contour plot after ',num2str(t),'th  range detection'],['Contour variance = ', num2str(variance)]})
 
 
-figure(2)
-for i7=1:s_number
-    if isempty(find(belief{1,i7})>0)==0
-    redrawWorld(belief{1,i7});
-    end
-    hold on
-end
-hold off
-zlim([0 1])
-axis tight
-title({['Histogram after ',num2str(t),'  range detection'],['Histogram variance = ', num2str(variance)],})
+% subplot(2,2,2)
+% for i7=1:s_number
+%     if isempty(find(belief{1,i7})>0)==0
+%     redrawWorld(belief{1,i7});
+%     end
+%     hold on
+% end
+% hold off
+% zlim([0 1])
+% axis tight
+% title({['Histogram after ',num2str(t),'  range detection'],['Histogram variance = ', num2str(variance)],})
 
-figure(3)
+subplot(2,2,3)
 for i7=1:s_number
     if isempty(find(belief{1,i7})>0)==0
     redrawWorlds(belief{1,i7});
@@ -163,12 +211,24 @@ end
 hold off
 zlim([0 1])
 axis tight
-title({['Histogram after ',num2str(t),'  range detection'],['Histogram variance = ', num2str(variance)],})
+title({['Histogram after ',num2str(t),'th  range detection'],['Histogram variance = ', num2str(variance)]})
+
+subplot(2,2,4)
+C=hsv(s_number);
+for i=1:s_number
+ etapts = plot (t,eta(i,t),'.','color',C(i,:));
+ hold on
+ etaline = plot (1:t,eta(i,1:t),'color',C(i,:));
+end
+axis([0 step 0 1])
+title(['Confidence level after ',num2str(t),'th  range detection'])
+
 
 for ii=1:s_number
     disp(['Sensor position : (x,y)= [',num2str(sensor_position(ii,1)),',',num2str(sensor_position(ii,2)),']']) 
     disp(['Estimate position after ',num2str(t),' range detection: (x,y)= [',num2str(est_position(ii,1)),',',num2str(est_position(ii,2)),']'])
 end
+
 pause(2);
 end
 

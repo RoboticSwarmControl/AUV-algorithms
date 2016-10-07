@@ -36,7 +36,7 @@ belief=belief_init;
 pts_in = cell(1,step);
 dn_belief = cell(1,step);
 b_position=zeros(101,101);
-
+b_var=NaN(1,step);
 %%----------- main code ---------------
 
 
@@ -80,39 +80,44 @@ for i=1:step
     %%% compute variance of estimate position
     fidx2=belief>10^-5;
     [idr,idc]=find(fidx2==1);
-    b_var=var(idr,idc);
+    b_var(1,step)=var(idr,idc);
     %%% -----------Plotting code------------
     
-    figure(1)
+%     figure(1)     
+    subplot(2,2,1)
     hPpts = plot(pts_in{i}(:,1),pts_in{i}(:,2),'r.');
     hold on
     axis equal
-    grid on
     hSpts = plot(sensor_position(1,1),sensor_position(1,2),'b+');
-    hBpts = plot(boat_position(1,1),boat_position(1,2),'k+');
+    hBpts = plot(boat_position(1,1),boat_position(1,2),'^','markerfacecolor','y','Markersize',10);
+    hold off
     axis([-50 50 -50 50]);
-    legend('estimate position','sensor position','boat position');
-    title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
+%     legend('estimate position','sensor position','boat position');
+    title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var(1,step))]})
     
-    figure(2)
+%     figure(2)
+    subplot(2,2,2)
     drawcontour(belief);
-    title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
+    title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var(1,step))]})
 
-    figure(3)
-    redrawWorld(belief);
-    hold on
-    redrawWorld(Pdonut);
-    redrawWorld(b_position);
-    title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
-    
-    figure(4)
+% %     figure(3)
+%     subplot(2,2,3)
+%     redrawWorld(belief);
+%     hold on
+%     redrawWorld(Pdonut);
+%     redrawWorld(b_position);
+%     title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
+%     
+%     figure(4)
+    subplot(2,2,3)
     redrawWorlds(belief);
     hold on
     redrawWorlds(Pdonut);
     redrawWorlds(b_position);
+    title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var(1,step))]})
     
-    title({['Histogram after ',num2str(i),'  distance measurements'],['Histogram variance = ', num2str(b_var)]})
-    
+    subplot(2,2,4)
+    plot(step,)
     
    pause(1); 
 end
