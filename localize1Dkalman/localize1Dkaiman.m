@@ -12,10 +12,10 @@
 
 %------------- BEGIN CODE --------------
 %%------------ main variable -----------
-n = 2; % sensor position
+n = 4; % sensor position
 boat_init = 0;
 boat_current = 0;
-v= 1; %m/s
+v= 3; %m/s
 dt= .1; 
 dist = zeros(n,1);
 distm = zeros(n,100);
@@ -66,11 +66,11 @@ subplot(2,1,2)
 hold on
 [hDfpts,hDfline]=initdfdist(n,0,diff);
 hold off
-axis([0 1300 0 x_m]);
+axis([0 400 0 x_m]);
 title ('Distance bwt x-kalman and sensor-position')
 
 %%------------ measure and postion estimate--------------
-for t = 0:dt:1300
+for t = 0:dt:400
     boat_current = boat_current + v*dt;
     bt = t - floor(t);
     if t==0
