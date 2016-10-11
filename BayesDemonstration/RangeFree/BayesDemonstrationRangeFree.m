@@ -19,7 +19,8 @@ format compact
 %------------- Main variable -----------
 s_number = 2; %sensor number
 b_number = 3; %boat number
-step = 50;
+step = 100;
+ttgrid=3423; %numel(ones(101,101));
 %generate sensor position
 a=0;
 b=100;
@@ -86,7 +87,7 @@ for t=1:step
     if isempty(r1)==0
         for i2=1:numel(r1)
             %find possible position in the range
-            pts_in{r1(i2),c1(i2)}=overlapping(xy,boat_position(r1(i2),:),range);  
+            pts_in{r1(i2),c1(i2)}=overlapping(xy,boat_position(r1(i2),:),range+3*sd);  
         end
         for i3=1:b_number
             for i4=1:s_number
@@ -125,21 +126,8 @@ for t=1:step
    end
 %--------------- Confidence level ---------
 if isempty(r1)==0
-    theta=(distance_bws).^2;
-    for ii1=1:b_number
-        for ii2=1:s_number
-            l(ii1,ii2)=(dist(boat_position(ii1,:),est_position(ii2,:))).^2;
-        end
-    end
     for ii1=1:s_number
-        eta_b=NaN(b_number,s_number);
-        for ii2=1:b_number
-            eta_b(ii2,ii1)=1-(abs(sum(theta(ii2,ii1)-l(ii2,ii1)))/sum(theta(ii2,ii1)));
-        end
-        eta(ii1,t)=sum(eta_b(:,ii1))/b_number;
-        if eta(ii1,t)<0
-            eta(ii1,t)=0;
-        end
+        eta(ii1,t)=1-numel(find(belief{1,ii1}>0))/ttgrid;
     end
 else
     if t==1
@@ -148,6 +136,30 @@ else
         eta(:,t)=eta(:,t-1);
     end
 end
+% if isempty(r1)==0
+%     theta=(distance_bws).^2;
+%     for ii1=1:b_number
+%         for ii2=1:s_number
+%             l(ii1,ii2)=(dist(boat_position(ii1,:),est_position(ii2,:))).^2;
+%         end
+%     end
+%     for ii1=1:s_number
+%         eta_b=NaN(b_number,s_number);
+%         for ii2=1:b_number
+%             eta_b(ii2,ii1)=1-(abs(sum(theta(ii2,ii1)-l(ii2,ii1)))/sum(theta(ii2,ii1)));
+%         end
+%         eta(ii1,t)=sum(eta_b(:,ii1))/b_number;
+%         if eta(ii1,t)<0
+%             eta(ii1,t)=0;
+%         end
+%     end
+% else
+%     if t==1
+%         eta(:,t)=0;
+%     else
+%         eta(:,t)=eta(:,t-1);
+%     end
+% end
 
 %---------------plot image ---------------
 figure(1)
@@ -226,7 +238,7 @@ title(['Confidence level after ',num2str(t),'th  range detection'])
 
 for ii=1:s_number
     disp(['Sensor position : (x,y)= [',num2str(sensor_position(ii,1)),',',num2str(sensor_position(ii,2)),']']) 
-    disp(['Estimate position after ',num2str(t),' range detection: (x,y)= [',num2str(est_position(ii,1)),',',num2str(est_position(ii,2)),']'])
+    disp(['Estimate position after ',num2str(t),' range detection: (x,y)= [',num2str(est_position(ii,2)),',',num2str(est_position(ii,1)),']'])
 end
 
 pause(2);
