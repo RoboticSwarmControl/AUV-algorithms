@@ -17,30 +17,30 @@ clear
 clc
 format compact
 %------------- Main variable -----------
-s_number = 2; %sensor number
-b_number = 3; %boat number
+s_number = 5; %sensor number
+b_number = 1; %boat number
 step = 100;
 ttgrid=3423; %numel(ones(101,101));
 %generate sensor position
 a=0;
-b=100;
-C=20;
-d=80;
-x1=C+(d-C)*rand(s_number,1);
-y1=C+(d-C)*rand(s_number,1);
-sensor_position=[x1(:),y1(:)];
-
+b=200;
+C=b/10;
+d=9*b/10;
+% x1=C+(d-C)*rand(s_number,1);
+% y1=C+(d-C)*rand(s_number,1);
+% sensor_position=[x1(:),y1(:)];
+sensor_position=[37.2874 132.1360;93.5801 159.5577;92.1412 28.3507;108.181825 55.1490;148.8647 93.5427];
 %generate map area
-xrange = 0:100;
-yrange = 0:100;
+xrange = 0:b;
+yrange = 0:b;
 [X,Y]=ndgrid(xrange,yrange);
 xy=[X(:),Y(:)];
 
-range = 30; %boat sensor detect range
-sd = 1; %sensor error 
+range = 60; %boat sensor detect range
+sd = 2; %sensor error 
 
 belief = cell(1,s_number); % Bayes' rule belief
-belief_init = ones(101,101)./numel(ones(101,101));
+belief_init = ones(b+1,b+1)./numel(ones(b+1,b+1));
 
 for i=1:s_number
     belief{1,i}=belief_init;
@@ -54,7 +54,7 @@ idx_in = zeros(b_number,s_number); % record if sensor in range with 0 or 1
 
 distance_bws=zeros(b_number,s_number);
 variance = zeros(1,s_number);
-est_postion = zeros(s_number,2);
+est_position = zeros(s_number,2);
 eta = NaN(s_number,step); % confidence level
 eta_b=NaN(b_number,s_number); %confidence level each boat and each sensor
 theta = NaN(b_number,s_number); %distance squar bwt boat and sensor position
@@ -93,7 +93,7 @@ for t=1:step
             for i4=1:s_number
                 if isempty(pts_in{i3,i4})==0
                  prob_in{i3,i4}=2/numel(pts_in{i3,i4});
-                 boat_belief{i3,i4}=zeros(101,101);
+                 boat_belief{i3,i4}=zeros(b+1,b+1);
                 for i5 = 1:numel(pts_in{i3,i4})/2
                     boat_belief{i3,i4}(pts_in{i3,i4}(i5,2)+1,pts_in{i3,i4}(i5,1)+1)=prob_in{i3,i4};
                 end
@@ -176,7 +176,7 @@ plot (boat_position(:,1),boat_position(:,2),'>','markerfacecolor','y','markersiz
 plot (sensor_position(:,1),sensor_position(:,2),'b+');
 hold off
 axis equal
-axis([0 100 0 100])
+axis([0 b 0 b])
 % legend('Boat position','sensor position','Estimated Area','Location','northeastoutside');
 title(['Estimated area after ',num2str(t),'th  Range detection'])
 
@@ -196,7 +196,7 @@ for ii=1:s_number
 end
 hold off
 axis equal
-axis([0 100 0 100])
+axis([0 b 0 b])
 % legend('Boat position','sensor position','Estimated Area','Location','northeastoutside');
 title({['Contour plot after ',num2str(t),'th  range detection'],['Contour variance = ', num2str(variance)]})
 
