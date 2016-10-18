@@ -4,12 +4,16 @@ function inmatrix=overlapping(X,c,r,mode)
     mode=2;
     end
     if mode==2
-    [idx,dist]=range2(c,r,X);
+        idx = (X(:,1)-c(1)).^2+(X(:,2)-c(2)).^2 <= r^2;
+    %[idx,dist]=range2(c,r,X);
     else
     [idx,dist]=range1(c,r,X);
     end
     inmatrix = X(idx,:);
 end
+
+
+
 
     function [idx,dist]=range1(c,r,X)
     [nPoints,nVariables]=size(X);
