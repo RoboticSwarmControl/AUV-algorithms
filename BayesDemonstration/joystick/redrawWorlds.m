@@ -1,7 +1,7 @@
 function h = redrawWorlds(belief)
         %set(hWorldFig,'CData',belief);
         colormap(cool)
-        h = surf(belief,'EdgeColor','none');
+        h = surf(belief,'EdgeColor','interp');
 %         camlight headlight;
 %         lighting gouraud;
 % %         h.FaceLighting = 'gouraud';
