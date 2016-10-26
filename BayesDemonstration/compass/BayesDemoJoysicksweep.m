@@ -211,7 +211,9 @@ while 1
     %     hFig = figure(1);
     %     set(gcf,'PaperPositionMode', 'auto')
     %     set(hFig,'Position',[100 200 1000 700])
+    figure(1)
     subplot(2,2,1)
+    colormap(jet)
     for i=1:b_number
         for ii=1:s_number
             if idx_in(i,ii)==1
@@ -228,6 +230,7 @@ while 1
     if B_b ==1
         plot(trajactory(:,1),trajactory(:,2),'b-');
     end
+    drawCompass(belief,boat_pass);
     hold off
     grid on
     %     axis  equal
@@ -260,7 +263,7 @@ while 1
         if isempty(find(belief{1,i7})>0)==0
             redrawWorlds(belief{1,i7});
         end
-       hold on 
+        hold on
     end
     drawPass(boat_pass);
     hold off
@@ -277,7 +280,7 @@ while 1
     end
     axis([0 400 0 1])
     title(['Confidence Level after ',num2str(index-1),'th detection'])
-    % delay between plots
-    pause(.001)
+    %     delay between plots
     
+    pause(.001)
 end
