@@ -1,4 +1,4 @@
-function [background,compass]=drawCompass(belief,boat_pass)
+function [anglemap1,compass] = drawCompass(belief,boat_pass)
 n=numel(belief);
 [r,c]=size(belief{1,1});
 r_c=(r-1)/2+1;
@@ -20,6 +20,7 @@ Z = zeros(2,72);
             anglemap(i1,i2)=ceil(s/5);
         end
     end
+    anglemap1=anglemap;
     
     for i = 1:72
         [r1{1,i},c1{1,i}]=find(anglemap==i);    
@@ -40,7 +41,7 @@ Z = zeros(2,72);
         for i1 =1:num
             r2=r1{1,i}(i1);
             c2=c1{1,i}(i1);
-            Z(1,i)=Z(1,i)+boat_pass(r2,c2);
+            Z(1,i)=Z(1,i)+boat_pass(c2,r2);
             Z(2,i)=Z(1,i);
         end
     end
@@ -55,6 +56,7 @@ r = r_c-7:5:r_c-2;
 % yrange = 0:200;
 % [X1,Y1] = ndgrid(xrange,yrange);
 % Z1=boat_pass;
+% background = Z1;
 % for i= 1:n
 %     Z1=Z1+belief{1,i};
 % end
@@ -73,6 +75,7 @@ r = r_c-7:5:r_c-2;
 % % end
 
 % ax2 = axes;
+compass = Z;
 colormap(jet)
 cPlot=surf(Y+r_c-1,X+r_c-1,Z);
 view(2)
