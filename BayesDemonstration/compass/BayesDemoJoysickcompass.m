@@ -50,7 +50,7 @@ boat_pass = ones(b+1,b+1).*100./numel(ones(b+1,b+1));
 for i=1:s_number
     belief{1,i}=belief_init;
 end
-recal =1;
+
 trajactory = NaN(10000,2);
 trajactory(1,:)=[0,0];
 index =1 ;
@@ -76,6 +76,9 @@ C = hsv(s_number);
 auto = 0;
 idx_deltal = [];
 dpmt = 0.3;
+refine_m=0;
+enter_refine_mode=0;
+recal =1;
 % loop until ctrl+c
 while 1
     X=axis(joy, 1);     % X-axis is joystick axis 1
@@ -130,7 +133,7 @@ while 1
         distance = distance + dist(boat_last,boat_current);
         trajactory(t+1,:)=boat_current;
         if abs(x-boat_last(1,1))>0 || abs(y-boat_last(1,2))>0
-          t=t+1;  
+            t=t+1;
         end
         boat_last = boat_current;
         %----------- sensor detect ------------
@@ -302,7 +305,6 @@ while 1
         if recal ==1
             [rr,cc]=find(compass==max(compass(:)));
             hp=compass(1,cc(1));
-            recal = 0;
         end
         
         for t=1:1001
@@ -329,31 +331,42 @@ while 1
                 v = input('Input speed: ');
             end
             
-            if compass(1,cc(1))<dpmt*hp
+            if compass(1,cc(1))<dpmt*hp && enter_refine_mode==0
                 recal = 1;
             end
             
-            if recal ==1
+            
+            
+            if enter_refine_mode ==0 && recal ==1
                 [rr,cc]=find(compass==max(compass(:)));
                 hp=compass(1,cc(1));
                 recal = 0;
+                [rr1,cc1]=find(anglemap==cc(1));
+                goal = [mean(rr1)-1,mean(cc1)-1];
+                lamda = atan2(goal(1,2)-boat_last(1,2),goal(1,1)-boat_last(1,1)); % heading
+            end
+            %%---------- detect lower confidence level posistion ----------
+            if t==1
+                now = t;
+            else
+                now = t-1;
             end
             
-            
-            [rr1,cc1]=find(anglemap==cc(1));
-            goal = [mean(rr1)-1,mean(cc1)-1];
-            lamda = atan2(goal(1,2)-boat_last(1,2),goal(1,1)-boat_last(1,1)); % heading
-            
-            %%---------- detect lower confidence level posistion ----------
-            if numel(find(eta(:,index)>0.9))>s_number/2
-                mincl=find(eta(:,index)==min(eta(:,index)));
-                lamda = atan2(est_position(mincl,2)-boat_last(1,2),est_position(mincl,1)-boat_last(1,1));
-                s=ceil(atan2(est_position(mincl,2)-1-ceil(b/2)-1,est_position(mincl,1)-1-ceil(b/2)-1)/pi*180);
-                if s<0
-                    s=s+360;
+            if numel(find(eta(:,now)>0.7))==s_number && refine_m==0
+                
+                if numel(find(eta(:,now)>0.9))>0.6*s_number || numel(find(eta(:,now)>0.9))== round(0.6*s_number)
+                    mincl=find(eta(:,now)==min(eta(:,now)));
+                    lamda = atan2(est_position(mincl,2)-boat_last(1,2),est_position(mincl,1)-boat_last(1,1));
+                    %                     s=atan2(est_position(mincl,2)-1-ceil(b/2)-1,est_position(mincl,1)-1-ceil(b/2)-1)/pi*180;
+                    %                     if s<0
+                    %                         s=s+360;
+                    %                     end
+                    %                     cc(1,1)=round(s(1,1)/5);
+                    %                     hp=compass(1,cc(1));
+                    refine_m =1;
+                    enter_refine_mode=1;
                 end
-                cc(1)=s/5;
-                hp=compass(1,cc(1));
+                
             end
             
             x=boat_last(1,1)+cos(lamda)*v;  % boat x coordinate.
@@ -436,13 +449,18 @@ while 1
             end
             
             %%---- if dt(variance)~=0--------
-            delta = variance_last-variance;
-            idx_delta=find(delta>0,1);
+            %             delta = variance_last-variance;
+            idx_delta=find(idx_in>0,1);
             if isempty(idx_delta)==1 && isempty(idx_deltal)==0
-                recal=1;
+                if enter_refine_mode ==0
+                    recal=1;
+                elseif enter_refine_mode ==1
+                    refine_m=0;
+                end
+                
             end
-            delta_last = delta;
-            idx_deltal=find(delta_last>0,1);
+            idx_in_last = idx_in;
+            idx_deltal=find(idx_in_last>0,1);
             
             variance_last = variance;
             
@@ -484,6 +502,8 @@ while 1
             %             dpmt = sum(eta(:,index))/s_number;
             if dpmt<0.3
                 dpmt=0.3;
+            elseif dpmt>0.85
+                dpmt = 0.85;
             end
             
             %----------- Plot boat curretn position ------------------
@@ -562,6 +582,10 @@ while 1
             %     delay between plots
             
             pause(.001)
+            
+            if mean(eta(:,now))>0.95
+                break
+            end
         end
     end
     

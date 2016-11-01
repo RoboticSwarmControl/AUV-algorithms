@@ -81,12 +81,12 @@ cPlot=surf(Y+r_c-1,X+r_c-1,Z);
 view(2)
 set(cPlot,'FaceColor','interp','EdgeColor','interp');
 % colormap(ax2,'jet');
-% cb2 = colorbar(ax2,'Location','eastoutside');
-% for ks = 1:length(cPlot)
-%     zdata = get(cPlot(ks),'ZData');
-%     set(cPlot(ks),'CData', zdata);
-%     set(cPlot(ks),'FaceColor', 'interp');
-% end
+%  cb2 = colorbar(ax2,'Location','eastoutside');
+for ks = 1:length(cPlot)
+    zdata = get(cPlot(ks),'ZData');
+    set(cPlot(ks),'CData', zdata);
+    set(cPlot(ks),'FaceColor', 'interp');
+end
 
 % linkaxes([ax1,ax2])
 
