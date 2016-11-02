@@ -82,6 +82,8 @@ refine_m=0;
 enter_refine_mode=0;
 recal =1;
 mincl_old=0;
+rsearch_mode=0;
+position_r=NaN(1,2);
 % loop until ctrl+c
 while auto==0
     X=axis(joy, 1);     % X-axis is joystick axis 1
@@ -355,7 +357,7 @@ while auto==0
                 now = t-1;
             end
             
-            if numel(find(eta(:,now)>0.7))==s_number && refine_m==0
+            if numel(find(eta(:,now)>0.7))==s_number && refine_m==0 && rsearch_mode==0
                 
                 if numel(find(eta(:,now)>0.85))>0.6*s_number || numel(find(eta(:,now)>0.85))== round(0.6*s_number)
                     for i=1:b_number
@@ -365,18 +367,23 @@ while auto==0
                         end
                     end
                     distance_bwest1=distance_bwest;
-                    mincl = find(distance_bwest(:)==min(distance_bwest(:)));
-                    if mincl_old == mincl
-                        distance_bwest1(:,mincl)=[];
-                        mincl1 = find(distance_bwest1(:)==min(distance_bwest1(:)));
-                        mincl = find(distance_bwest(:)==distance_bwest1(mincl1));
-                        finfori=0;
-                    else
-                        findori = 1; % find best oritation in refine mode
+                    mincl = find(distance_bwest(:)==min(distance_bwest1(:)));
+                    k=1;
+                    while k<5
+                        if mincl_old == mincl || eta(mincl,now)>0.95
+                            distance_bwest1(:,mincl)=[];
+                            mincl1 = find(distance_bwest1(:)==min(distance_bwest1(:)));
+                            mincl = find(distance_bwest(:)==distance_bwest1(mincl1));
+                            findori=0;
+                        else
+                            findori = 1; % find best oritation in refine mode
+                            break
+                        end
+                        k=k+1;
                     end
                     
                     while findori == 1
-                        if eta(mincl,now)>0.93
+                        if eta(mincl,now)>0.95
                             distance_bwest1(:,mincl)=[];
                             mincl1 = find(distance_bwest1(:)==min(distance_bwest1(:)));
                             mincl = find(distance_bwest(:)==distance_bwest1(mincl1));
@@ -387,7 +394,11 @@ while auto==0
                         
                         mincl_old = mincl;
                     end
-                    lamda = atan2(est_position(mincl,2)-boat_last(1,2),est_position(mincl,1)-boat_last(1,1));
+                    gama = atan2(boat_last(1,2)-est_position(mincl,2),boat_last(1,1)-est_position(mincl,1));
+                    position_r(1,1)=est_position(mincl,1)+cos(gama)*range;
+                    position_r(1,2)=est_position(mincl,2)+sin(gama)*range;
+                    est_position1=est_position(mincl,:);
+                    lamda = atan2(position_r(1,2)-boat_last(1,2),position_r(1,1)-boat_last(1,1));
                     %                     s=atan2(est_position(mincl,2)-1-ceil(b/2)-1,est_position(mincl,1)-1-ceil(b/2)-1)/pi*180;
                     %                     if s<0
                     %                         s=s+360;
@@ -396,24 +407,57 @@ while auto==0
                     %                     hp=compass(1,cc(1));
                     refine_m =1;
                     enter_refine_mode=1;
+                    rsearch_mode=0;
                 end
                 
             end
             
-            x=boat_last(1,1)+cos(lamda)*v;  % boat x coordinate.
-            
-            y=boat_last(1,2)+sin(lamda)*v;  % boat y coordinate.
-            
-            if x<0
-                x=0;
-            elseif x>b
-                x=b;
+            if rsearch_mode==0
+                dist_bpr=dist(boat_last,position_r); %distance between boat and position_r
+                x=boat_last(1,1)+cos(lamda)*v;  % boat x coordinate.
+                y=boat_last(1,2)+sin(lamda)*v;  % boat y coordinate.
+                if dist_bpr<v && isnan(dist_bpr)==0
+                    x=boat_last(1,1)+cos(lamda)*dist_bpr;
+                    y=boat_last(1,2)+sin(lamda)*dist_bpr;
+                end
+                if x<0
+                    x=0;
+                elseif x>b
+                    x=b;
+                end
+                
+                if y<0
+                    y=0;
+                elseif y>b
+                    y=b;
+                end
             end
             
-            if y<0
-                y=0;
-            elseif y>b
-                y=b;
+            
+            
+            
+            
+            if rsearch_mode == 1 && enter_refine_mode==1
+                if first==1
+                    lamda1=atan2(boat_last(1,2)-est_position(mincl,2),boat_last(1,1)-est_position(mincl,1));
+                    first=0;
+                end
+                %                 lamda2=(lamda1/pi*180+360)/180*pi;
+                x=est_position1(1,1)+cos(lamda1-start*v/range)*range;  % boat x coordinate.
+                
+                y=est_position1(1,2)+sin(lamda1-start*v/range)*range;  % boat y coordinate.
+                start=start+1;
+                if x<0
+                    x=0;
+                elseif x>b
+                    x=b;
+                end
+                
+                if y<0
+                    y=0;
+                elseif y>b
+                    y=b;
+                end
             end
             
             boat_current = [x,y];
@@ -421,6 +465,14 @@ while auto==0
             distance = distance + dist(boat_last,boat_current);
             trajactory(t+1,:)=boat_current;
             boat_last = boat_current;
+            
+            if isnan(position_r)==0
+                if dist(boat_current,position_r)<10^-6
+                    rsearch_mode=1;
+                    start=1;
+                    first=1;
+                end
+            end
             %----------- sensor detect ------------
             
             pts_in = cell(b_number,s_number); % find the possible position in the range
@@ -492,13 +544,18 @@ while auto==0
             end
             
             if enter_refine_mode ==1
-                idx_delta=find(idx_in(mincl)>0);
-                if isempty(idx_delta)==1 && isempty(idx_deltal)==0
-                    
+                %                 idx_delta=find(idx_in(mincl)>0);
+                %                 if isempty(idx_delta)==1 && isempty(idx_deltal)==0
+                %
+                %                     refine_m=0;
+                %                 end
+                %                 idx_in_last = idx_in;
+                %                 idx_deltal=find(idx_in_last(mincl)>0);
+                
+                if eta(mincl,now)>0.95 && rsearch_mode==1
                     refine_m=0;
+                    rsearch_mode=0;
                 end
-                idx_in_last = idx_in;
-                idx_deltal=find(idx_in_last(mincl)>0);
             end
             
             
@@ -623,7 +680,7 @@ while auto==0
             
             pause(.001)
             
-            if mean(eta(:,now))>0.95
+            if numel(find(eta(:,now)>0.95))==s_number  %%mean(eta(:,now))>0.95
                 break
             end
         end
