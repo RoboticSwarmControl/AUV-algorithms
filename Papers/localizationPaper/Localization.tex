@@ -150,7 +150,7 @@
 %%%%%% END TOC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \title{\LARGE \bf 
-Optimizing an AUV's path to Localize Underwater Sensors
+Optimal trajectory determination of a single USV for Underwater Sensors Localization based on Range-Free Scheme
 }
 \author{
 Haoran Zhao
@@ -166,7 +166,9 @@ H. Zhao and A.~Becker are with the  Dept.~of Electrical and Computer Engineering
 
 
 \begin{abstract} 
-We present fundamental progress on localizing underwater sensors with a patrolling AUV
+Many applications of underwater wireless sensor network require the sensor location. The main idea in most localization algorithm has been that localizing the unknown sensor nodes location with the help of landmarks with know coordinates (e.g GPS equipped beacons). A promising method to reduce the cost of localization process is to replace bunch of GPS equipped beacons with one mobile beacon. In this case, considering the coverage, time, accuracy and energy cost, path planning of mobile beacon becomes the fundamental research issue. 
+
+This paper presents a strategy called "compass" for optimizing trajectory of a moving Unmanned Surface Vehicle (USV) to complete localization. The present strategy involves three major components: a) underwater localization algorithm based on centralized Range-Free scheme and Monte Carlo Localization algorithm. b) calculation of an expected information density (EID) map based on prior information. c) R-search mode based on pseudo formation. The "compass" strategy does not rely on high accuracy sensing model, and is well-posed  for coverage, time and cost. We  successfully simulate localization for targets in two-dimensional work-space using directional sensor under different conditions, and compare performance to traditional trajectories.   
 \end{abstract}
 
 
@@ -176,41 +178,22 @@ We present fundamental progress on localizing underwater sensors with a patrolli
 \section{Introduction}
 %###############################################################
 
-One of the exciting new directions of robotics is the design and development
-of micro- and nanorobot systems, with the goal of letting a massive swarm of robots
-perform complex operations in a complicated environment. Due to scaling 
-issues, individual control of the involved robots becomes physically impossible:
-while energy storage capacity drops with the third power of robot size,
-medium resistance decreases much slower. As a consequence,
-current micro- and nanorobot systems with many robots are steered and
-directed by an external force that acts as a common control signal~\cite{Donald2013,Chiang2011,Hsi-Wen2012,Diller2013,Jing2013,Ou2013,Lanauze2013}.
-These common control signals include global magnetic or electric fields,
-chemical gradients, and turning a light source on and off.  
+Underwater wireless sensor network (UWSN) is an emerging research area that benefits ocean environmental monitoring, offshore exploration, military surveillance, {\em etc} ~\cite{Underwater acoustic sensor networks: Research challenges}. It is now more common for oil and gas companies, fishing industry, militaries, and marine researchers to deploy underwater wireless sensor network to obtain submarine data. However, the fundamental problem is how to efficiently complete underwater localization.
 
-Clearly, having only one global signal that uniformly affects all robots at once
-poses a strong restriction on the ability of the swarm to perform complex operations.
-The only hope for breaking symmetry is to use interactions between the robot swarm
-and obstacles in the environment. The key challenge is to establish
-if interactions with obstacles are sufficient to perform complex operations, ideally by analyzing the complexity of possible logical operations.
- In previous work \cite{Becker2013f,Becker2014,Becker2014a},
-we were able to demonstrate how a subset of logical functions can be implemented;
-however, devising a fan-out gate (and thus the ability to replicate and copy information)
-appeared to be prohibitively challenging. In this paper, we resolve this crucial question by
-showing that only using unit-sized robots is insufficient for achieving computational
-universality. Remarkably, adding a limited number of domino-shaped objects {\em is sufficient}
-to let a common control signal, mobile particles, and unit-sized obstacles
-simulate a computer. While this does not imply that large-scale computational 
-tasks should be run on these particle computers instead of current electronic
-devices, it establishes that future nano-scale systems are able to perform
-arbitrarily complex operations {\em as part of the physical system}, instead
-of having to go through external computational devices.
-% We do not present particle logic as an alternative
-%to electronic computing.
-%Frankly, this form of computation is impractical. It is slow, requires large
-%amounts of space, and is vulnerable to manufacturing defects. Rather, we
-%quantify the computing power of mobile robotics at the most simple level in
-%order to gain insight for massively-parallel, automated assembly at the micro
-%and nano length-scales.
+currently, many underwater localization algorithms have been proposed, and they can be classified into three categories~\cite{Localization techniques for underwater acoustic sensor networks.}: (1) In stationary localization algorithms, all sensors have fixed locations. (2) In mobile localization algorithms, all sensors are mobile. (3) In hybrid localization algorithms, fixed and mobile sensors are coexist. these three categories can be further compared and summarized into subcategories presented in~\cite{Localization Algorithms of UnderwaterWireless Sensor Networks: A Survey}, using following aspects:
+\begin{enumerate}
+\item range method:  Range-based schemes and range-free schemes
+\item time synchronization: Time synchronization is an important role in range-based schemes. in underwater localization environment, it is difficult to achieve precise time synchronization. Thus, in some localization algorithm based on range-based schemes, whole processes are assumed to be perfect time synchronization.
+\item localization coverage: Maximizing exploration coverage is a fundamental requirement for underwater localization  algorithm. one goal of localization is to balance  coverage and cost.
+\item localization time: In any localization algorithm, localization time can not be too long. especially in UWSN, sensors can be passively drifted by currents. The localization accuracy will decrease with increasing of time.
+\item localization accuracy: Localization accuracy is the most important evaluation criterion. A good localization 
+algorithm or path planning is aim to achieve high localization accuracy.
+\item energy consumption: energy consumption can be considered into two parts. firstly, mobile beacon consumption, which means electricity, fuel, {\em etc}. secondly, wireless sensor consumption.    
+\end{enumerate}
+considering above aspects, accurate time synchronization in real-time will introduces more energy consumption and
+hardware cost. and the range-based schemes uses ToA (Time of Arrival) and TDoA (Time Difference of Arrival). thus, the accuracy of time synchronization will significantly influence the localization results.additional, unlike the speed of light propagation in air is constant, acoustic speed propagates in water varies with temperature, salinity and water pressure, which is a nonlinear speed model ~\cite{Principles of underwater sound for engineers,}.  considering these reasons, we use range-free schemes to avoid time synchronization and reduce hardware cost. because computation complexity will also influence the energy consumption, we transfer 3D work space into 2D work space by simply equipping a pressure sensor to obtain depth data ~\cite{Localization algorithms of underwater wireless sensor networks: A survey} to reduce the computation complexity. also, all computation is centralized, which occur on the USV. the "compass" strategy is inspired by ~\cite{Trajectory Optimization for Continuous Ergodic Exploration}~\cite{Optimal Planning for Target Localization and Coverage Using Range Sensing}. the main idea of "compass" strategy is to use prior information to construct  EID map map into 360 degree, which is similar as compass. compass will instruct USV the orientation to trade off coverage and cost. after result accuracy achieve specific level, USV enters R-search mode, which is inspired by ~cite{Optimal trajectory determination of a single moving beacon for efficient localization in a mobile ad-hoc network}, to refine localization results. 
+
+this paper is organized as follows: In Section 2, we discuss the related work of optimizing trajectory algorithm of underwater localization with mobile beacons. Section 3 presents the localization algorithm for a single USV. Section 4 presents the EID algorithm, coverage problem. and pseudo formation.we discuss how "compass" strategy works to optimizing the trajectory of USV in Section 5. Section 6 shows the simulation results under different conditions compare with traditional strategy. In Section 7. we conclude with discussion on performance and future work.
 
    \begin{figure}
    \centering

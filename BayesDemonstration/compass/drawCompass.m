@@ -76,6 +76,7 @@ r = r_c-7:5:r_c-2;
 
 % ax2 = axes;
 compass = Z;
+Z=Z./sum(Z(1,:));
 colormap(jet)
 cPlot=surf(Y+r_c-1,X+r_c-1,Z);
 view(2)
