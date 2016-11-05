@@ -46,7 +46,7 @@ sd = 1; %sensor error
 ttgrid = 3405;
 belief = cell(1,s_number); % Bayes' rule belief
 belief_init = ones(b+1,b+1)./numel(ones(b+1,b+1));
-boat_pass = ones(b+1,b+1).*100./numel(ones(b+1,b+1));
+boat_pass = ones(b+1,b+1).*100./numel(ones(b+1,b+1)); %
 for i=1:s_number
     belief{1,i}=belief_init;
 end
@@ -84,6 +84,7 @@ recal =1;
 mincl_old=0;
 rsearch_mode=0;
 position_r=NaN(1,2);
+cl_level=0.95;
 % loop until ctrl+c
 while auto==0
     X=axis(joy, 1);     % X-axis is joystick axis 1
@@ -356,7 +357,10 @@ while auto ==1
         else
             now = t-1;
         end
-        
+        %         if ctn ==1
+        %             now=now-1;
+        %         end
+        %
         if numel(find(eta(:,now)>0.7))==s_number && refine_m==0 && rsearch_mode==0
             
             if numel(find(eta(:,now)>0.85))>0.6*s_number || numel(find(eta(:,now)>0.85))== round(0.6*s_number)
@@ -370,7 +374,7 @@ while auto ==1
                 mincl = find(distance_bwest(:)==min(distance_bwest1(:)));
                 k=1;
                 while k<5
-                    if mincl_old == mincl || eta(mincl,now)>0.95
+                    if mincl_old == mincl || eta(mincl,now)>cl_level
                         if k==1
                             distance_bwest1(:,mincl)=[];
                         else
@@ -387,7 +391,7 @@ while auto ==1
                 end
                 
                 while findori == 1
-                    if eta(mincl,now)>0.95
+                    if eta(mincl,now)>cl_level
                         distance_bwest1(:,mincl)=[];
                         mincl1 = find(distance_bwest1(:)==min(distance_bwest1(:)));
                         mincl = find(distance_bwest(:)==distance_bwest1(mincl1));
@@ -416,14 +420,16 @@ while auto ==1
             
         end
         
-        if rsearch_mode==0
-            dist_bpr=dist(boat_last,position_r); %distance between boat and position_r
-            x=boat_last(1,1)+cos(lamda)*v;  % boat x coordinate.
-            y=boat_last(1,2)+sin(lamda)*v;  % boat y coordinate.
-            if dist_bpr<v && isnan(dist_bpr)==0
-                x=boat_last(1,1)+cos(lamda)*dist_bpr;
-                y=boat_last(1,2)+sin(lamda)*dist_bpr;
+        if rsearch_mode == 1 && enter_refine_mode==1
+            if first==1
+                lamda1=atan2(boat_last(1,2)-est_position(mincl,2),boat_last(1,1)-est_position(mincl,1));
+                first=0;
             end
+            %                 lamda2=(lamda1/pi*180+360)/180*pi;
+            x=est_position(mincl_old,1)+cos(lamda1-start*v/range)*range;  % boat x coordinate.
+            
+            y=est_position(mincl_old,2)+sin(lamda1-start*v/range)*range;  % boat y coordinate.
+            start=start+1;
             if x<0
                 x=0;
             elseif x>b
@@ -435,22 +441,46 @@ while auto ==1
             elseif y>b
                 y=b;
             end
+            
+            if dist([x,y],boat_last)>v
+                pts_in{1,mincl_old}=overlapping(xy,boat_current(1,:),range);
+                boat_belief{1,mincl_old}=zeros(b+1,b+1);
+                
+                for i5 = 1: numel(pts_in{1,mincl_old})/2
+                    boat_belief{1,mincl_old}(pts_in{1,mincl_old}(i5,2)+1,pts_in{1,mincl_old}(i5,1)+1)=PDF(pts_in{1,mincl_old}(i5,:),boat_current(1,:),range,sd); %prob_in{i3,i4}
+                    boat_pass(pts_in{1,mincl_old}(i5,2)+1,pts_in{1,mincl_old}(i5,1)+1)=0;
+                end
+                belief{1,mincl_old}=belief{1,mincl_old}.*boat_belief{1,mincl_old};
+                normalizer=1/sum(belief{1,mincl_old}(:));
+                belief{1,mincl_old}=belief{1,mincl_old}.*normalizer;
+                eta_now= 1-numel(find(belief{1,mincl_old}>belief_init))/ttgrid;
+                if eta_now<cl_level
+                    gama = atan2(boat_last(1,2)-est_position(mincl_old,2),boat_last(1,1)-est_position(mincl_old,1));
+                    position_r(1,1)=est_position(mincl_old,1)+cos(gama)*range;
+                    position_r(1,2)=est_position(mincl_old,2)+sin(gama)*range;
+                    lamda = atan2(position_r(1,2)-boat_last(1,2),position_r(1,1)-boat_last(1,1));
+                    rsearch_mode=0;
+                else
+                    rsearch_mode=0;
+                    refine_m=0;
+                    eta(:,now)=eta(:,now-1);
+                    eta(:,now+1)=eta(:,now);
+                    if numel(find(eta(:,now)>cl_level))==s_number  %%mean(eta(:,now))>0.95
+                        break
+                    end
+                    continue
+                end
+            end
         end
         
-        
-        
-        
-        
-        if rsearch_mode == 1 && enter_refine_mode==1
-            if first==1
-                lamda1=atan2(boat_last(1,2)-est_position(mincl,2),boat_last(1,1)-est_position(mincl,1));
-                first=0;
+        if rsearch_mode==0
+            dist_bpr=dist(boat_last,position_r); %distance between boat and position_r
+            x=boat_last(1,1)+cos(lamda)*v;  % boat x coordinate.
+            y=boat_last(1,2)+sin(lamda)*v;  % boat y coordinate.
+            if dist_bpr<v && isnan(dist_bpr)==0
+                x=boat_last(1,1)+cos(lamda)*dist_bpr;
+                y=boat_last(1,2)+sin(lamda)*dist_bpr;
             end
-            %                 lamda2=(lamda1/pi*180+360)/180*pi;
-            x=est_position1(1,1)+cos(lamda1-start*v/range)*range;  % boat x coordinate.
-            
-            y=est_position1(1,2)+sin(lamda1-start*v/range)*range;  % boat y coordinate.
-            start=start+1;
             if x<0
                 x=0;
             elseif x>b
@@ -494,6 +524,9 @@ while auto ==1
                     for i5 = 1: numel(pts_in{i,i1})/2
                         boat_belief{i,i1}(pts_in{i,i1}(i5,2)+1,pts_in{i,i1}(i5,1)+1)=PDF(pts_in{i,i1}(i5,:),boat_current(i,:),range,sd); %prob_in{i3,i4}
                         boat_pass(pts_in{i,i1}(i5,2)+1,pts_in{i,i1}(i5,1)+1)=0;
+                    end
+                    if isnan(belief{1,i1})==1
+                        belief{1,i1}=belief_last{1,i1};
                     end
                     
                     belief_last{1,i1}=belief{1,i1};
@@ -560,7 +593,7 @@ while auto ==1
             %                 idx_in_last = idx_in;
             %                 idx_deltal=find(idx_in_last(mincl)>0);
             
-            if eta(mincl,now)>0.95 && rsearch_mode==1
+            if eta(mincl,now)>cl_level && rsearch_mode==1
                 refine_m=0;
                 rsearch_mode=0;
             end
@@ -574,11 +607,11 @@ while auto ==1
             sumc=0;
             [r4,c4]=find(belief{1,ii}>belief_init);
             for i=1:numel(r4)
-                sumr=sumr+belief{1,ii}(r4(i),c4(i))*(r4(i)-1);
-                sumc=sumc+belief{1,ii}(r4(i),c4(i))*(c4(i)-1);
+                sumr=sumr+belief{1,ii}(r4(i),c4(i))*(r4(i));
+                sumc=sumc+belief{1,ii}(r4(i),c4(i))*(c4(i));
             end
-            est_position(ii,2)=sumr;
-            est_position(ii,1)=sumc;
+            est_position(ii,2)=sumr-1;
+            est_position(ii,1)=sumc-1;
             %                 est_position(ii,2)=mean(r4)-1;
             %                 est_position(ii,1)=mean(c4)-1;
             %         est_position(ii,:)=sum(weight{1,ii});
@@ -688,7 +721,7 @@ while auto ==1
         
         pause(.001)
         
-        if numel(find(eta(:,now)>0.95))==s_number  %%mean(eta(:,now))>0.95
+        if numel(find(eta(:,now)>cl_level))==s_number  %%mean(eta(:,now))>0.95
             break
         end
     end
@@ -716,80 +749,80 @@ while auto==2
         v = input('Input speed: ');
     end
     
-          %----------- Plot boat curretn position ------------------
-        %     hFig = figure(1);
-        %     set(gcf,'PaperPositionMode', 'auto')
-        %     set(hFig,'Position',[100 200 1000 700])
-        figure(1)
-        subplot(2,2,1)
-        colormap(jet)
-        for i=1:b_number
-            for ii=1:s_number
-                if idx_in(i,ii)==1
-                    plot(pts_in{i,ii}(:,1),pts_in{i,ii}(:,2),'r.');
-                    hold on
-                end
-            end
+    %----------- Plot boat curretn position ------------------
+    %     hFig = figure(1);
+    %     set(gcf,'PaperPositionMode', 'auto')
+    %     set(hFig,'Position',[100 200 1000 700])
+    figure(1)
+    subplot(2,2,1)
+    colormap(jet)
+    %         for i=1:b_number
+    %             for ii=1:s_number
+    %                 if idx_in(i,ii)==1
+    %                     plot(pts_in{i,ii}(:,1),pts_in{i,ii}(:,2),'r.');
+    %                     hold on
+    %                 end
+    %             end
+    %         end
+    plot(boat_current(1,1),boat_current(1,2),'>','MarkerSize',10,'MarkerFaceColor','y');
+    hold on
+    if X_b == 1
+        plot(sensor_position(:,1),sensor_position(:,2),'b+');
+    end
+    if B_b ==1
+        plot(trajactory(:,1),trajactory(:,2),'b-');
+    end
+    [anglemap,compass] = drawCompass(belief,boat_pass);
+    hold off
+    grid on
+    %     axis  equal
+    axis([0 b 0 b])
+    title(['Run distance = ', num2str(distance)])
+    
+    %     figure(2)
+    subplot(2,2,2)
+    plot(boat_current(:,1),boat_current(:,2),'>','markerfacecolor','y','markersize',10);
+    hold on
+    for i = 1: s_number
+        plot(est_position(i,1),est_position(i,2),'+','color',C(i,:));
+    end
+    if X_b == 1
+        plot(sensor_position(:,1),sensor_position(:,2),'b+');
+    end
+    for ii=1:s_number
+        if belief{1,ii}(1,1)~=belief_init(1,1)
+            contour(belief{1,ii},5);
         end
-        plot(boat_current(1,1),boat_current(1,2),'>','MarkerSize',10,'MarkerFaceColor','y');
+    end
+    hold off
+    %     axis equal
+    axis([0 b 0 b])
+    title(['Coutour plot after',num2str(index-1),'th detection']);
+    
+    %     figure(3)
+    subplot(2,2,3)
+    for i7 = 1:s_number
+        if isempty(find(belief{1,i7})>0)==0
+            redrawWorlds(belief{1,i7});
+        end
         hold on
-        if X_b == 1
-            plot(sensor_position(:,1),sensor_position(:,2),'b+');
-        end
-        if B_b ==1
-            plot(trajactory(:,1),trajactory(:,2),'b-');
-        end
-        [anglemap,compass] = drawCompass(belief,boat_pass);
-        hold off
-        grid on
-        %     axis  equal
-        axis([0 b 0 b])
-        title(['Run distance = ', num2str(distance)])
-        
-        %     figure(2)
-        subplot(2,2,2)
-        plot(boat_current(:,1),boat_current(:,2),'>','markerfacecolor','y','markersize',10);
+    end
+    drawPass(boat_pass);
+    hold off
+    zlim([0 1])
+    axis tight
+    title(['Probability Histogram after ',num2str(index-1),'th detection']);
+    
+    %     figure(4)
+    subplot(2,2,4)
+    for i2=1:s_number
+        etapts = plot(t,eta(i2,t),'.','color',C(i2,:));
         hold on
-        for i = 1: s_number
-            plot(est_position(i,1),est_position(i,2),'+','color',C(i,:));
-        end
-        if X_b == 1
-            plot(sensor_position(:,1),sensor_position(:,2),'b+');
-        end
-        for ii=1:s_number
-            if belief{1,ii}(1,1)~=belief_init(1,1)
-                contour(belief{1,ii},5);
-            end
-        end
-        hold off
-        %     axis equal
-        axis([0 b 0 b])
-        title(['Coutour plot after',num2str(index-1),'th detection']);
-        
-        %     figure(3)
-        subplot(2,2,3)
-        for i7 = 1:s_number
-            if isempty(find(belief{1,i7})>0)==0
-                redrawWorlds(belief{1,i7});
-            end
-            hold on
-        end
-        drawPass(boat_pass);
-        hold off
-        zlim([0 1])
-        axis tight
-        title(['Probability Histogram after ',num2str(index-1),'th detection']);
-        
-        %     figure(4)
-        subplot(2,2,4)
-        for i2=1:s_number
-            etapts = plot(t,eta(i2,t),'.','color',C(i2,:));
-            hold on
-            etaline = plot (1:t,eta(i2,1:t),'color',C(i2,:));
-        end
-        axis([0 2000/v 0 1])
-        title(['Confidence Level after ',num2str(index-1),'th detection'])
-        %     delay between plots
-        
-        pause(.001)
+        etaline = plot (1:t,eta(i2,1:t),'color',C(i2,:));
+    end
+    axis([0 2000/v 0 1])
+    title(['Confidence Level after ',num2str(index-1),'th detection'])
+    %     delay between plots
+    
+    pause(.001)
 end

@@ -190,6 +190,7 @@ currently, many underwater localization algorithms have been proposed, and they 
 algorithm or path planning is aim to achieve high localization accuracy.
 \item energy consumption: energy consumption can be considered into two parts. firstly, mobile beacon consumption, which means electricity, fuel, {\em etc}. secondly, wireless sensor consumption.    
 \end{enumerate}
+fig.1 shows the high-level components for the closed- loop localization process. USV iteratively collects sensor measurements, update sensor belief map and coverage map, and calculate expected information map. based on the expected information map generate "compass", execute strategy  , and  
 considering above aspects, accurate time synchronization in real-time will introduces more energy consumption and
 hardware cost. and the range-based schemes uses ToA (Time of Arrival) and TDoA (Time Difference of Arrival). thus, the accuracy of time synchronization will significantly influence the localization results.additional, unlike the speed of light propagation in air is constant, acoustic speed propagates in water varies with temperature, salinity and water pressure, which is a nonlinear speed model ~\cite{Principles of underwater sound for engineers,}.  considering these reasons, we use range-free schemes to avoid time synchronization and reduce hardware cost. because computation complexity will also influence the energy consumption, we transfer 3D work space into 2D work space by simply equipping a pressure sensor to obtain depth data ~\cite{Localization algorithms of underwater wireless sensor networks: A survey} to reduce the computation complexity. also, all computation is centralized, which occur on the USV. the "compass" strategy is inspired by ~\cite{Trajectory Optimization for Continuous Ergodic Exploration}~\cite{Optimal Planning for Target Localization and Coverage Using Range Sensing}. the main idea of "compass" strategy is to use prior information to construct  EID map map into 360 degree, which is similar as compass. compass will instruct USV the orientation to trade off coverage and cost. after result accuracy achieve specific level, USV enters R-search mode, which is inspired by ~cite{Optimal trajectory determination of a single moving beacon for efficient localization in a mobile ad-hoc network}, to refine localization results. 
 
@@ -197,10 +198,10 @@ this paper is organized as follows: In Section 2, we discuss the related work of
 
    \begin{figure}
    \centering
-\begin{overpic}[width =\columnwidth]{TetrisOne.jpg}%\put(30,-7){ $m=1$, partition 1}
+\begin{overpic}[width =\columnwidth]{flow1}%\put(30,-7){ $m=1$, partition 1}
 \end{overpic}
 \caption{\label{fig:prototype}
-Gravity-fed hardware implementation of  particle computation.  The reconfigurable prototype is setup as a {\sc fan-out} gate using a 2$\times$1 robot (white). This paper proves that such a gate is impossible using only 1$\times$1 robots.  }
+illustration of the necessary component for the closed-loop localization process. Section 3 discusses step A. Section 4 presents step B. We will talk about step C in Section 5.}
 \vspace{-1em}
 \end{figure}
 
