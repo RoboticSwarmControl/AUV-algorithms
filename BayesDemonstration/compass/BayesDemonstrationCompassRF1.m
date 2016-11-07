@@ -46,7 +46,7 @@ sd = 1; %sensor error
 ttgrid = 3405;
 belief = cell(1,s_number); % Bayes' rule belief
 belief_init = ones(b+1,b+1)./numel(ones(b+1,b+1));
-boat_pass = ones(b+1,b+1); % .*100./numel(ones(b+1,b+1))
+boat_pass = ones(b+1,b+1); %.*100./numel(ones(b+1,b+1))
 for i=1:s_number
     belief{1,i}=belief_init;
 end
@@ -81,10 +81,12 @@ dpmt = 0.3;
 refine_m=0;
 enter_refine_mode=0;
 recal =1;
-mincl_old=0;
+idx_in_last=zeros(b_number,s_number);
 rsearch_mode=0;
 position_r=NaN(1,2);
 cl_level=0.95;
+now_min=[];
+now_min_old=0;
 % loop until ctrl+c
 while auto==0
     X=axis(joy, 1);     % X-axis is joystick axis 1
@@ -351,84 +353,44 @@ while auto ==1
             goal = [mean(rr1)-1,mean(cc1)-1];
             lamda = atan2(goal(1,2)-boat_last(1,2),goal(1,1)-boat_last(1,1)); % heading
         end
-        %%---------- detect lower confidence level posistion ----------
-        if t==1
-            now = t;
-        else
-            now = t-1;
-        end
-        %         if ctn ==1
-        %             now=now-1;
-        %         end
-        %
-        if numel(find(eta(:,now)>0.7))==s_number && refine_m==0 && rsearch_mode==0
-            
-            if numel(find(eta(:,now)>0.85))>0.6*s_number || numel(find(eta(:,now)>0.85))== round(0.6*s_number)
-                for i=1:b_number
-                    for i1=1:s_number
-                        % calculate distace bwt boat and estimated position
-                        distance_bwest(i,i1)=dist(est_position(i1,:),boat_current(i,:));
-                    end
-                end
-                distance_bwest1=distance_bwest;
-                mincl = find(distance_bwest(:)==min(distance_bwest1(:)));
-                k=1;
-                while k<5
-                    if mincl_old == mincl || eta(mincl,now)>cl_level
-                        if k==1
-                            distance_bwest1(:,mincl)=[];
-                        else
-                            distance_bwest1(:,mincl1)=[];
-                        end
-                        mincl1 = find(distance_bwest1(:)==min(distance_bwest1(:)));
-                        mincl = find(distance_bwest(:)==distance_bwest1(mincl1));
-                        findori=0;
-                    else
-                        findori = 1; % find best oritation in refine mode
-                        break
-                    end
-                    k=k+1;
-                end
-                
-                while findori == 1
-                    if eta(mincl,now)>cl_level
-                        distance_bwest1(:,mincl)=[];
-                        mincl1 = find(distance_bwest1(:)==min(distance_bwest1(:)));
-                        mincl = find(distance_bwest(:)==distance_bwest1(mincl1));
-                        %                     mincl=find(eta(:,now)==min(eta(:,now)));
-                    else
-                        findori = 0;
-                    end
-                    
-                    mincl_old = mincl;
-                end
-                gama = atan2(boat_last(1,2)-est_position(mincl,2),boat_last(1,1)-est_position(mincl,1));
-                position_r(1,1)=est_position(mincl,1)+cos(gama)*range;
-                position_r(1,2)=est_position(mincl,2)+sin(gama)*range;
-                est_position1=est_position(mincl,:);
-                lamda = atan2(position_r(1,2)-boat_last(1,2),position_r(1,1)-boat_last(1,1));
-                %                     s=atan2(est_position(mincl,2)-1-ceil(b/2)-1,est_position(mincl,1)-1-ceil(b/2)-1)/pi*180;
-                %                     if s<0
-                %                         s=s+360;
-                %                     end
-                %                     cc(1,1)=round(s(1,1)/5);
-                %                     hp=compass(1,cc(1));
-                refine_m =1;
-                enter_refine_mode=1;
-                rsearch_mode=0;
-            end
-            
-        end
         
-        if rsearch_mode == 1 && enter_refine_mode==1
-            if first==1
-                lamda1=atan2(boat_last(1,2)-est_position(mincl,2),boat_last(1,1)-est_position(mincl,1));
+        if enter_refine_mode ==1 && first ==1
+            if isempty(now_min)==1
+                distance_bwest=zeros(1,s_number);
+                for i = 1: numel(c_r)
+                    distance_bwest(1,c_r(i))=dist(boat_last,est_position(c_r(i),:));
+                end
+                [~,c_m]=find(distance_bwest>0);
+                [~,c_m]=find(distance_bwest==min(distance_bwest(1,c_m(:))));
+                gama = atan2(boat_last(1,2)-est_position(c_m,2),boat_last(1,1)-est_position(c_m,1));
+                position_r(1,1)=est_position(c_m,1)+cos(gama)*range;
+                position_r(1,2)=est_position(c_m,2)+sin(gama)*range;
+                lamda = atan2(position_r(1,2)-boat_last(1,2),position_r(1,1)-boat_last(1,1));
                 first=0;
             end
-            %                 lamda2=(lamda1/pi*180+360)/180*pi;
-            x=est_position(mincl_old,1)+cos(lamda1-start*v/range)*range;  % boat x coordinate.
+        end
+        
+        if enter_refine_mode == 1 && first ==1
+            if isempty(now_min)==0
+                gama = atan2(boat_last(1,2)-est_position(now_min,2),boat_last(1,1)-est_position(now_min,1));
+                position_r(1,1)=est_position(now_min,1)+cos(gama)*range;
+                position_r(1,2)=est_position(now_min,2)+sin(gama)*range;
+                lamda = atan2(position_r(1,2)-boat_last(1,2),position_r(1,1)-boat_last(1,1));
+                first=0;
+                first_enter=1;
+                c_m=now_min;
+            end
+        end
+        
+        if rsearch_mode==1 && enter_refine_mode==1
+            if first_enter==1
+                lamda1=atan2(boat_last(1,2)-est_position(c_m,2),boat_last(1,1)-est_position(c_m,1));
+                first_enter=0;
+            end
             
-            y=est_position(mincl_old,2)+sin(lamda1-start*v/range)*range;  % boat y coordinate.
+            x=est_position(c_m,1)+cos(lamda1-start*v/range)*range;  % boat x coordinate.
+            
+            y=est_position(c_m,2)+sin(lamda1-start*v/range)*range;  % boat y coordinate.
             start=start+1;
             if x<0
                 x=0;
@@ -443,35 +405,37 @@ while auto ==1
             end
             
             if dist([x,y],boat_last)>v
-                pts_in{1,mincl_old}=overlapping(xy,boat_current(1,:),range);
-                boat_belief{1,mincl_old}=zeros(b+1,b+1);
-                
-                for i5 = 1: numel(pts_in{1,mincl_old})/2
-                    boat_belief{1,mincl_old}(pts_in{1,mincl_old}(i5,2)+1,pts_in{1,mincl_old}(i5,1)+1)=PDF(pts_in{1,mincl_old}(i5,:),boat_current(1,:),range,sd); %prob_in{i3,i4}
-                    boat_pass(pts_in{1,mincl_old}(i5,2)+1,pts_in{1,mincl_old}(i5,1)+1)=0;
-                end
-                belief{1,mincl_old}=belief{1,mincl_old}.*boat_belief{1,mincl_old};
-                normalizer=1/sum(belief{1,mincl_old}(:));
-                belief{1,mincl_old}=belief{1,mincl_old}.*normalizer;
-                eta_now= 1-numel(find(belief{1,mincl_old}>belief_init))/ttgrid;
-                if eta_now<cl_level
-                    gama = atan2(boat_last(1,2)-est_position(mincl_old,2),boat_last(1,1)-est_position(mincl_old,1));
-                    position_r(1,1)=est_position(mincl_old,1)+cos(gama)*range;
-                    position_r(1,2)=est_position(mincl_old,2)+sin(gama)*range;
-                    lamda = atan2(position_r(1,2)-boat_last(1,2),position_r(1,1)-boat_last(1,1));
-                    rsearch_mode=0;
-                else
-                    rsearch_mode=0;
-                    refine_m=0;
-                    eta(:,now)=eta(:,now-1);
-                    eta(:,now+1)=eta(:,now);
-                    trajactory(t+1,:)=trajactory(t,:);
-                    if numel(find(eta(:,now)>cl_level))==s_number  %%mean(eta(:,now))>0.95
-                        break
+                gama = atan2(boat_last(1,2)-est_position(c_m,2),boat_last(1,1)-est_position(c_m,1));
+                position_r(1,1)=est_position(c_m,1)+cos(gama)*range;
+                position_r(1,2)=est_position(c_m,2)+sin(gama)*range;
+                lamda = atan2(position_r(1,2)-boat_last(1,2),position_r(1,1)-boat_last(1,1));
+                rsearch_mode=0;
+            end
+            now_est=find(eta(:,t-1)>0);
+            if eta(c_m,t-1)>cl_level
+                if isempty(now_est)==0
+                    now_min=find(eta(:,t-1)==min(eta(now_est(:),t-1)));
+                    if now_min ~= now_min_old
+                        first=1;
                     end
+                    now_min_old=now_min;
+                end
+            end    
+                if isempty(now_est)==1 || numel(now_est)==numel(find(eta(:,t-1)>cl_level))
+                    enter_refine_mode=0;
+                    rsearch_mode=0;
+                    eta(:,t)=eta(:,t-1);
+                    trajactory(t+1,:)=trajactory(t,:);
+                    recal=1;
+                    first=1;
+                    now_min=[];
+                    position_r=NaN(1,2);
                     continue
                 end
-            end
+                if numel(find(eta(:,t)>cl_level))==s_number  %%mean(eta(:,now))>0.95
+                    break
+                end
+            
         end
         
         if rsearch_mode==0
@@ -481,33 +445,33 @@ while auto ==1
             if dist_bpr<v && isnan(dist_bpr)==0
                 x=boat_last(1,1)+cos(lamda)*dist_bpr;
                 y=boat_last(1,2)+sin(lamda)*dist_bpr;
+                rsearch_mode=1;
+                first_enter=1;
             end
             if x<0
                 x=0;
+                first=1;
             elseif x>b
                 x=b;
+                first=1;
             end
             
             if y<0
                 y=0;
+                first=1;
             elseif y>b
                 y=b;
+                first=1;
             end
         end
+        
+        
         
         boat_current = [x,y];
         
         distance = distance + dist(boat_last,boat_current);
         trajactory(t+1,:)=boat_current;
         boat_last = boat_current;
-        
-        if isnan(position_r)==0
-            if dist(boat_current,position_r)<10^-6
-                rsearch_mode=1;
-                start=1;
-                first=1;
-            end
-        end
         %----------- sensor detect ------------
         
         pts_in = cell(b_number,s_number); % find the possible position in the range
@@ -526,14 +490,13 @@ while auto ==1
                         boat_belief{i,i1}(pts_in{i,i1}(i5,2)+1,pts_in{i,i1}(i5,1)+1)=PDF(pts_in{i,i1}(i5,:),boat_current(i,:),range,sd); %prob_in{i3,i4}
                         boat_pass(pts_in{i,i1}(i5,2)+1,pts_in{i,i1}(i5,1)+1)=0;
                     end
-                    if isnan(belief{1,i1})==1
-                        belief{1,i1}=belief_last{1,i1};
-                    end
-                    
-                    belief_last{1,i1}=belief{1,i1};
                     belief{1,i1}=belief{1,i1}.*boat_belief{i,i1};
                     normalizer=1/sum(belief{1,i1}(:));
                     belief{1,i1}=belief{1,i1}.*normalizer;
+                    if isnan(belief{1,i1})==1
+                        belief{1,i1}=belief_last{1,i1};
+                    end
+                    belief_last{1,i1}=belief{1,i1};
                 else
                     idx_in(i,i1)=0;
                     pts_in{i,i1}=overlapping(xy,boat_current(i,:),range+3*sd);
@@ -569,40 +532,31 @@ while auto ==1
             end
         end
         
-        %%---- if dt(variance)~=0--------
-        %             delta = variance_last-variance;
+        
+        %%----------- verify change mode-------------------
+        if enter_refine_mode ==0 && recal==0
+            idx_delta=idx_in_last-idx_in;
+            if numel(find(idx_delta>0))>0
+                [r_r,c_r]=find((idx_delta)>0); 
+                for i =1: numel(c_r)
+                    if eta(c_r(i),t-2)<cl_level
+                        enter_refine_mode=1;
+                        first=1;
+                    else
+                        c_r(i)=[];
+                    end
+                end
+            end
+            idx_in_last = idx_in;    
+        end
+        
         if x==0 || x==b || y==0 || y==b && enter_refine_mode ==0
             recal =1;
         end
-        
-        if enter_refine_mode ==0
-            idx_delta=find(idx_in>0,1);
-            if isempty(idx_delta)==1 && isempty(idx_deltal)==0
-                
-                recal=1;
-            end
-            idx_in_last = idx_in;
-            idx_deltal=find(idx_in_last>0,1);
-        end
-        
-        if enter_refine_mode ==1
-            %                 idx_delta=find(idx_in(mincl)>0);
-            %                 if isempty(idx_delta)==1 && isempty(idx_deltal)==0
-            %
-            %                     refine_m=0;
-            %                 end
-            %                 idx_in_last = idx_in;
-            %                 idx_deltal=find(idx_in_last(mincl)>0);
-            
-            if eta(mincl,now)>cl_level && rsearch_mode==1
-                refine_m=0;
-                rsearch_mode=0;
-            end
-        end
-        
-        
+
         variance_last = variance;
         
+        %------------- estimate position ---------
         for  ii=1:s_number
             sumr=0;
             sumc=0;
@@ -613,9 +567,6 @@ while auto ==1
             end
             est_position(ii,2)=sumr-1;
             est_position(ii,1)=sumc-1;
-            %                 est_position(ii,2)=mean(r4)-1;
-            %                 est_position(ii,1)=mean(c4)-1;
-            %         est_position(ii,:)=sum(weight{1,ii});
         end
         
         %--------------- Confidence level ---------
@@ -627,6 +578,12 @@ while auto ==1
                 else
                     eta(ii1,t)=1-numel(find(belief{1,ii1}>belief_init))/ttgrid;
                 end
+                if t>1
+                    if isnan(eta(ii1,t))==1
+                        eta(ii1,t)=eta(ii1,t-1);
+                    end
+                end
+                
             end
         else
             if index==1
@@ -638,11 +595,19 @@ while auto ==1
         
         %%------------ detect parameter ---------
         dpmt=min(eta(:,t));
-        %             dpmt = sum(eta(:,index))/s_number;
         if dpmt<0.3
             dpmt=0.3;
         elseif dpmt>0.85
             dpmt = 0.85;
+        end 
+
+
+        if isnan(position_r)==0
+            if dist(boat_current,position_r)<10^-6
+                rsearch_mode=1;
+                start=1;
+                first=1;
+            end
         end
         
         %----------- Plot boat curretn position ------------------
@@ -722,7 +687,7 @@ while auto ==1
         
         pause(.001)
         
-        if numel(find(eta(:,now)>cl_level))==s_number  %%mean(eta(:,now))>0.95
+        if numel(find(eta(:,t)>cl_level))==s_number  
             break
         end
     end
